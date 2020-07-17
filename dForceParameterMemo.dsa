@@ -247,9 +247,9 @@ function captureViewportImage(){
 		var oImg = oViewport.captureImage();
 
 		// Save the image to a file
-		oImgMgr.saveImage( g_wEditFolder.text + "/" + g_wEditFileName.text + "_tip.png" , oImg );
+		oImgMgr.saveImage( g_wEditFolder.text + "/" + g_wEditFileName.text + ".tip.png" , oImg );
 
-		wTextBrowser.append( String("%1_tip.png").arg( g_wEditFileName.text ) );
+		wTextBrowser.append( String("%1.tip.png").arg( g_wEditFileName.text ) );
 		wTextBrowser.append( "Capture" );
 	}
 
