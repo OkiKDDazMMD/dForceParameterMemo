@@ -1,0 +1,509 @@
+// DAZ Studio version 4.10.0.123 filetype DAZ Script
+
+	var nMaxSelectedNodes = Scene.getNumSelectedNodes();
+	if(nMaxSelectedNodes!=1){
+		MessageBox.critical( qsTr("Selected Only One Nodes"), qsTr("Critical"), qsTr("&OK") );
+		return;
+	}
+
+	var g_oScriptFileName = DzFile(getScriptFileName());
+
+	//Load Initialize Data
+	var g_InitializeData = loadInitializeData();
+	if (!g_InitializeData){
+	    	//
+		g_InitializeData = Object();
+		g_InitializeData.outputPath = g_oScriptFileName.path();
+		g_InitializeData.materials = "";
+
+		//
+		saveInitializeData(g_InitializeData);
+	}
+
+	// Create a basic dialog
+	var oDlg = new DzBasicDialog();
+
+	// Get the wrapped widget for the dialog
+	var oDlgWgt = oDlg.getWidget();
+	
+	// Set the title of the dialog
+	oDlg.caption = "dForce Parameter Memo";
+	
+	// Strip the space for a settings key
+	var sKey = oDlg.caption.replace( / /g, "" ) + "Dlg";
+	
+	// Set an [unique] object name on the wrapped dialog widget;
+	// this is used for recording position and size separately
+	// from all other [uniquely named] DzBasicDialog instances
+	oDlgWgt.objectName = sKey;
+
+	var oVGBDlg = new DzVGroupBox( oDlg );
+
+	var wGBExport = new DzGroupBox( oVGBDlg );
+	var wGLExport = new DzGridLayout( wGBExport )
+	wGBExport.title = "dForce Materials Simulation Memo:";
+
+	var g_wEditFolder = new DzLineEdit( wGBExport );
+	g_wEditFolder.minWidth = 200;
+	g_wEditFolder.text = g_InitializeData.outputPath;
+	g_wEditFolder.readOnly = true
+
+	var wButtonFolderExport = addButtonOnGroupBox( wGBExport, "Select Folder", selectFolderExport );
+
+	var g_wEditFileName = new DzLineEdit( wGBExport );
+	g_wEditFileName.minWidth = 200;
+	g_wEditFileName.text = getNowDateText();
+
+	var wButtonDate = addButtonOnGroupBox( wGBExport, "Date", inputDateFileName );
+
+	var g_wCheckCapture = new DzCheckBox( wGBExport );
+	g_wCheckCapture.text = "Capture";
+	g_wCheckCapture.checked = true;
+
+	var wButtonCapture = addButtonOnGroupBox( wGBExport, "Capture", captureViewportImage );
+
+	var g_wCheckSimulationSettings = new DzCheckBox( wGBExport );
+	g_wCheckSimulationSettings.text = "Simulation Settings";
+	g_wCheckSimulationSettings.checked = true;
+	
+	var g_wCheckCompress = new DzCheckBox( wGBExport );
+	g_wCheckCompress.text = "Compress";
+	g_wCheckCompress.checked = false;
+
+	var wLabel = new DzLabel( wGBExport );
+	wLabel.text = "Materials";
+
+	var g_wEditMaterial = new DzLineEdit( wGBExport );
+	g_wEditMaterial.minWidth = 200;
+	g_wEditMaterial.text = g_InitializeData.materials;
+
+	var wButtonMaterials = addButtonOnGroupBox( wGBExport, "Materials", addListItem );
+
+	var g_wListViewMaterials = new DzListView( wGBExport );
+	g_wListViewMaterials.addColumn( "Materials" );
+	addListItem()
+	connect(g_wListViewMaterials,"clicked(DzListViewItem*)" , changeCheckListItemMaterials);
+
+	var wButtonExport = addButtonOnGroupBox( wGBExport, "Memo", dForceMaterialsSimulationExport );
+
+	wGLExport.addWidget(g_wEditFolder, 0, 0);
+	wGLExport.addWidget(wButtonFolderExport, 0, 1);
+	wGLExport.addWidget(g_wEditFileName, 1, 0);
+	wGLExport.addWidget(wButtonDate, 1, 1);
+	wGLExport.addWidget(g_wCheckCapture, 2, 0);
+	wGLExport.addWidget(wButtonCapture, 2, 1);
+	wGLExport.addWidget(g_wCheckSimulationSettings, 3, 0);
+	wGLExport.addWidget(g_wCheckCompress, 3, 1);
+	wGLExport.addWidget(wLabel, 4, 0);
+	wGLExport.addWidget(g_wEditMaterial, 5, 0);
+	wGLExport.addWidget(wButtonMaterials, 5, 1);
+	wGLExport.addWidget(g_wListViewMaterials, 6, 0, 1, 2);
+	wGLExport.addWidget(wButtonExport, 7, 0, 1, 2);
+
+	var wTextBrowser = new DzTextEdit(oVGBDlg);
+	wTextBrowser.readOnly = true;
+	var oTextBrowser = wTextBrowser.getWidget();
+	wTextBrowser.objectName = String("%1LocalLView").arg( sKey );
+
+	// Add the GroupBox to the dialog
+	oDlg.addWidget( oVGBDlg, 0, DzWidget.AlignCenter );
+
+	// Get the minimum size of the dialog
+	var sizeHint = oDlgWgt.minimumSizeHint;
+	
+	// Set the fixed size of the dialog
+//	oDlg.setFixedSize( sizeHint.width, sizeHint.height );
+	
+	// Set the text on the accept button
+	oDlg.setAcceptButtonText("Close");
+	// Hide the cancel button
+	oDlg.showCancelButton( false );
+
+	oDlg.exec();
+
+
+/*********************************************************************/
+//
+/*********************************************************************/
+function loadInitializeData()
+{
+	var sInitName = g_oScriptFileName.path() + "/_JSON.ini";
+	var oInitFile = DzFile( sInitName );
+
+	if (! oInitFile.exists()){
+	    return false;
+	}
+
+	oInitFile.open(DzFile.ReadOnly);
+	var sJSONInit = oInitFile.read();
+	oInitFile.close();
+	var obj = JSON.parse( sJSONInit );
+	return obj;
+}
+
+
+/*********************************************************************/
+//
+/*********************************************************************/
+function saveInitializeData(obj){
+	var sJSONData = JSON.stringify(obj, undefined, "\t");
+	var sInitName = g_oScriptFileName.path() + "/_JSON.ini";
+	var oInitFile = DzFile( sInitName );
+	oInitFile.open(DzFile.WriteOnly);
+	oInitFile.writeLine( sJSONData );
+	oInitFile.close();
+}
+
+
+/*********************************************************************/
+//
+/*********************************************************************/
+function addButtonOnGroupBox( gb, text, func ){
+	var wButton = new DzPushButton( gb );
+	wButton.text = text;
+	connect( wButton, "clicked()", func );
+	return( wButton );
+}
+
+
+/*********************************************************************/
+//
+/*********************************************************************/
+function zeroPadding(nValue)
+{
+	if(nValue<10)
+	{
+		return String( "0%1" ).arg(nValue); 
+	}
+	else
+	{
+		return String( "%1" ).arg(nValue);
+	}
+}
+
+
+/*********************************************************************/
+//
+function getNowDateText()
+{
+	var oNowDate = new Date();
+	return String( "%1%2%3%4%5" ).arg( oNowDate.getFullYear().toString() )
+						.arg( zeroPadding(oNowDate.getMonth()+1) )
+						.arg( zeroPadding(oNowDate.getDate()) )
+						.arg( zeroPadding(oNowDate.getHours()) )
+						.arg( zeroPadding(oNowDate.getMinutes()) );
+}
+
+
+/*********************************************************************/
+//
+/*********************************************************************/
+function selectFolderExport(){
+	var path = FileDialog.doDirectoryDialog("Select a Folder for the Export", ""
+									, g_oScriptFileName.path() );
+	if( path ){
+		g_wEditFolder.text = path;
+	}
+}
+
+
+/*********************************************************************/
+//
+/*********************************************************************/
+function inputDateFileName(){
+	g_wEditFileName.text = getNowDateText();
+}
+
+
+/*********************************************************************/
+// DzNode : A function for getting the root of a node
+function getRootNode( oNode )
+{
+	// If a node is selected and it is a bone
+	if( oNode && oNode.inherits( "DzBone" ) ){
+		// We want the skeleton
+		return oNode.getSkeleton();
+	}
+
+	// Return the original node
+	return oNode;
+}
+
+
+/*********************************************************************/
+//
+/*********************************************************************/
+function captureViewportImage(){
+
+	// Get the image manager
+	var oImgMgr = App.getImageMgr();
+
+	// If there is a main window
+	if( MainWindow ){
+		// Get the active viewport
+		var oViewportMgr = MainWindow.getViewportMgr();
+		var oViewport = oViewportMgr.getActiveViewport().get3DViewport();
+
+		// Capture the contents of the active viewport
+		var oImg = oViewport.captureImage();
+
+		// Save the image to a file
+		oImgMgr.saveImage( g_wEditFolder.text + "/" + g_wEditFileName.text + "_tip.png" , oImg );
+
+		wTextBrowser.append( String("%1_tip.png").arg( g_wEditFileName.text ) );
+		wTextBrowser.append( "Capture" );
+	}
+
+}
+
+
+/*********************************************************************/
+//
+/*********************************************************************/
+function getShape(){
+	// Get the root of the primary selection
+	var oNode = getRootNode( Scene.getPrimarySelection() );
+	// If nothing is selected
+	if( !oNode ){
+		// We are done...
+		return;
+	}
+ 
+	// Get the object for the node
+	var oObject = oNode.getObject();
+	// If we do not have an object
+	if( !oObject ){
+		// We are done..
+		return;
+	}
+
+	// Get the current shape for the object
+	return oObject.getCurrentShape();
+}
+
+
+/*********************************************************************/
+//
+/*********************************************************************/
+function addListItem(){
+ 
+	var oShape = getShape();
+	var aMaterials = oShape.getAllMaterials();
+	if( !aMaterials ){
+		return;
+	}
+
+	var tempListViewItem, oMaterial, oProvider, sMaterial;
+
+	g_wListViewMaterials.clear();
+
+	var loopProvider = 0;
+
+	for( loopMaterials = 0; loopMaterials < aMaterials.length; loopMaterials++ ){
+		// Get the 'current' material
+		oMaterial = aMaterials[ loopMaterials ];
+		// Get the name of the material
+		sMaterial = oMaterial.name;
+
+		if( App.version64 >= 0x0004000900040065 ){
+			// Find the simulation settings provider with the name of the material
+			oProvider = oShape.findSimulationSettingsProvider( sMaterial );
+		} else {
+			// Simulation settings providers do not exist
+			continue;
+		}
+
+		if( oProvider!=null ){
+			tempListViewItem = new DzListViewItem(g_wListViewMaterials, loopProvider);
+			tempListViewItem.setText( 0, oMaterial.name);
+			++loopProvider
+		}
+	}
+}
+
+
+/*********************************************************************/
+//
+/*********************************************************************/
+function changeCheckListItemMaterials(item){
+	g_wEditMaterial.text = item.text( 0 );
+}
+
+/*********************************************************************/
+//
+/*********************************************************************/
+function stringPropertyValue( oProperty )
+{
+//	var sBool;
+	var sPropertyKind = oProperty.className();
+
+	switch( sPropertyKind ){
+
+		case "DzFloatProperty":
+			return String( "%1,DzFloatProperty,%2,%3" ).arg( oProperty.getValue() )
+												.arg( oProperty.isHidden() ? "Hidden" : "Visible" )
+												.arg( oProperty.getPath() );
+
+		case "DzIntProperty":
+			return String( "%1,DzIntProperty,%2,%3" ).arg( oProperty.getValue() )
+												.arg( oProperty.isHidden() ? "Hidden" : "Visible" )
+												.arg( oProperty.getPath() );
+
+		case "DzBoolProperty":
+			return String( "%1,DzBoolProperty,%2,%3" ).arg( oProperty.getBoolValue() ? "On" : "Off" )
+												.arg( oProperty.isHidden() ? "Hidden" : "Visible" )
+												.arg( oProperty.getPath() );
+
+		case "DzEnumProperty":
+			return String( "%1,DzEnumProperty,%2,%3" ).arg( oProperty.getStringValue() )
+												.arg( oProperty.isHidden() ? "Hidden" : "Visible" )
+												.arg( oProperty.getPath() );
+
+		case "DzColorProperty":
+			return String( "%1,%2,%3,DzColorProperty,%4,%5" ).arg( oProperty.getColorValue().red )
+													.arg( oProperty.getColorValue().green )
+													.arg( oProperty.getColorValue().blue )
+													.arg( oProperty.isHidden() ? "Hidden" : "Visible" )
+													.arg( oProperty.getPath() );
+
+		default:
+			return String( "Error,%1,%2" ).arg( sPropertyKind ).arg( oProperty.getPath() );
+			
+	}
+}
+
+
+/*********************************************************************/
+//
+/*********************************************************************/
+function dForceMaterialsSimulationExport(){
+
+	g_InitializeData.outputPath = g_wEditFolder.text;
+	g_InitializeData.materials = g_wEditMaterial.text;
+	saveInitializeData(g_InitializeData);
+
+	var oExportFile = DzFile( g_wEditFolder.text + "/" + g_wEditFileName.text + ".csv");
+	oExportFile.open(DzFile.WriteOnly);
+
+	var oShape = getShape();
+	var aMaterials = oShape.getAllMaterials();
+	if( !aMaterials ){
+		return;
+	}
+
+	var oMaterial, oProvider, oPropertyGroupTree;
+	var sMaterial;
+
+	for( loopMaterials = 0; loopMaterials < aMaterials.length; loopMaterials++ ){
+
+		// Get the 'current' material
+		oMaterial = aMaterials[ loopMaterials ];
+
+		// Get the name of the material
+		sMaterial = oMaterial.name;
+
+		if( ( sMaterial == g_wEditMaterial.text ) || ( g_wEditMaterial.text.trim().length < 1 ) ){
+
+			// If the application version is 4.9.3.135 or newer
+			if( App.version64 >= 0x0004000900040065 ){
+				// Find the simulation settings provider with the name of the material
+				oProvider = oShape.findSimulationSettingsProvider( sMaterial );
+				// Get the property group tree for the element
+				oPropertyGroupTree = oProvider.getPropertyGroups();
+				var aProperties = oPropertyGroupTree.getAllProperties();
+
+				for( i = 0; i < aProperties.length; i++ ){
+					if( aProperties[i].getPath().indexOf("Hair")<0 ){
+						oExportFile.writeLine( String("%1,%2,%3").arg( sMaterial ).arg( aProperties[i].getLabel() ).arg( stringPropertyValue(aProperties[i] ) ) );
+					}
+				}
+
+			// If the application version is older
+			} else {
+				// Simulation settings providers do not exist
+				continue;
+			}
+		}
+
+	}
+
+	oExportFile.close()
+
+	if(g_wCheckCapture.checked){
+		captureViewportImage();
+	}
+
+	wTextBrowser.append( String("%1.csv").arg( g_wEditFileName.text ) );
+	wTextBrowser.append( "Memo" );
+
+	if(g_wCheckSimulationSettings.checked){
+		dForceSimulationSettingsExport();
+	}
+
+}
+
+
+/*********************************************************************/
+//
+/*********************************************************************/
+function dForceSimulationSettingsExport(){
+	// Get the asset IO manager
+	var oAssetIOMgr = App.getAssetIOMgr();
+	// Define the class name of the asset filter we want to use
+	var sClassName = "DzSimulationSettingsAssetFilter";
+	// Find the index of the asset filter with the class name we want
+	var nAssetIOFilter = oAssetIOMgr.findFilter( sClassName );
+	// If we did not find an asset filter with the class name we wanted
+	if( nAssetIOFilter < 0 ){
+		// Inform the user
+		MessageBox.critical( text( "An asset filter with the class name " +
+			"\"%1\" could not be found.").arg( sClassName ),
+			text( "Critical Error" ), text( "&OK" ) );
+ 
+		// We are done...
+		return;
+	}
+ 
+	// Get the asset filter at the prescribed index
+	var oAssetIOFilter = oAssetIOMgr.getFilter( nAssetIOFilter );
+	// If we do not have a valid asset filter
+	if( !oAssetIOFilter ){
+		// Inform the user
+		MessageBox.critical( text( "An asset filter with the class name " +
+			"\"%1\" could not be found.").arg( sClassName ),
+			text( "Critical Error" ), text( "&OK" ) );
+ 
+		// We are done...
+		return;
+	}
+ 
+	// Create a settings object
+	var oSettings = new DzFileIOSettings();
+
+	// Get the default settings
+	oAssetIOFilter.getDefaultOptions( oSettings );
+
+	// Set the initial state of the compress file checkbox
+	oSettings.setBoolValue( "CompressOutput", g_wCheckCompress.checked );
+
+	// Do not to show the options
+	oSettings.setBoolValue( "RunSilent", true );
+
+	var sFile = String("%1/%2").arg( g_wEditFolder.text ).arg( g_wEditFileName.text );
+
+	// Use the asset manager to save a file, using the filter and defined settings
+	var oError = oAssetIOMgr.doSaveWithOptions( oAssetIOFilter, oSettings, false, sFile, g_wEditFolder.text, "" );
+
+	// If there was no error
+	if( oError.valueOf() == 0x00000000 ){
+		wTextBrowser.append( String("%1.dsa").arg( g_wEditFileName.text ) );
+		wTextBrowser.append( "Settings" );
+	// If there was an error
+	} else {
+		wTextBrowser.append( String("Error:%1").arg( getErrorMessage( oError ) ) );
+	}
+
+	// Clean up; do not leak memory
+	oAssetIOFilter.deleteLater();
+
+}
