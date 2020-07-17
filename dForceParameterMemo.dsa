@@ -46,7 +46,6 @@
 	var g_wEditFolder = new DzLineEdit( wGBExport );
 	g_wEditFolder.minWidth = 200;
 	g_wEditFolder.text = g_InitializeData.outputPath;
-	g_wEditFolder.readOnly = true
 
 	var wButtonFolderExport = addButtonOnGroupBox( wGBExport, "Select Folder", selectFolderExport );
 
@@ -496,7 +495,7 @@ function dForceSimulationSettingsExport(){
 
 	// If there was no error
 	if( oError.valueOf() == 0x00000000 ){
-		wTextBrowser.append( String("%1.dsa").arg( g_wEditFileName.text ) );
+		wTextBrowser.append( String("%1.duf").arg( g_wEditFileName.text ) );
 		wTextBrowser.append( "Settings" );
 	// If there was an error
 	} else {
