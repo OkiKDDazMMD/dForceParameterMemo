@@ -14,7 +14,9 @@
 	    	//
 		g_InitializeData = Object();
 		g_InitializeData.outputPath = g_oScriptFileName.path();
+		g_InitializeData.fileName = getNowDateText();
 		g_InitializeData.materials = "";
+		g_InitializeData.checkSimulationSettings = true;
 
 		//
 		saveInitializeData(g_InitializeData);
@@ -51,7 +53,7 @@
 
 	var g_wEditFileName = new DzLineEdit( wGBExport );
 	g_wEditFileName.minWidth = 200;
-	g_wEditFileName.text = getNowDateText();
+	g_wEditFileName.text = g_InitializeData.fileName;
 
 	var wButtonDate = addButtonOnGroupBox( wGBExport, "Date", inputDateFileName );
 
@@ -63,20 +65,18 @@
 
 	var g_wCheckSimulationSettings = new DzCheckBox( wGBExport );
 	g_wCheckSimulationSettings.text = "Simulation Settings";
-	g_wCheckSimulationSettings.checked = true;
+	g_wCheckSimulationSettings.checked = g_InitializeData.checkSimulationSettings;
 	
 	var g_wCheckCompress = new DzCheckBox( wGBExport );
 	g_wCheckCompress.text = "Compress";
 	g_wCheckCompress.checked = false;
 
-	var wLabel = new DzLabel( wGBExport );
-	wLabel.text = "Materials";
-
 	var g_wEditMaterial = new DzLineEdit( wGBExport );
 	g_wEditMaterial.minWidth = 200;
 	g_wEditMaterial.text = g_InitializeData.materials;
 
-	var wButtonMaterials = addButtonOnGroupBox( wGBExport, "Materials", addListItem );
+	var wLabel = new DzLabel( wGBExport );
+	wLabel.text = "Materials";
 
 	var g_wListViewMaterials = new DzListView( wGBExport );
 	g_wListViewMaterials.addColumn( "Materials" );
@@ -93,11 +93,10 @@
 	wGLExport.addWidget(wButtonCapture, 2, 1);
 	wGLExport.addWidget(g_wCheckSimulationSettings, 3, 0);
 	wGLExport.addWidget(g_wCheckCompress, 3, 1);
-	wGLExport.addWidget(wLabel, 4, 0);
-	wGLExport.addWidget(g_wEditMaterial, 5, 0);
-	wGLExport.addWidget(wButtonMaterials, 5, 1);
-	wGLExport.addWidget(g_wListViewMaterials, 6, 0, 1, 2);
-	wGLExport.addWidget(wButtonExport, 7, 0, 1, 2);
+	wGLExport.addWidget(g_wEditMaterial, 4, 0);
+	wGLExport.addWidget(wLabel, 4, 1);
+	wGLExport.addWidget(g_wListViewMaterials, 5, 0, 1, 2);
+	wGLExport.addWidget(wButtonExport, 6, 0, 1, 2);
 
 	var wTextBrowser = new DzTextEdit(oVGBDlg);
 	wTextBrowser.readOnly = true;
@@ -186,11 +185,12 @@ function zeroPadding(nValue)
 function getNowDateText()
 {
 	var oNowDate = new Date();
-	return String( "%1%2%3%4%5" ).arg( oNowDate.getFullYear().toString() )
+	return String( "%1%2%3%4%5%6" ).arg( oNowDate.getFullYear().toString() )
 						.arg( zeroPadding(oNowDate.getMonth()+1) )
 						.arg( zeroPadding(oNowDate.getDate()) )
 						.arg( zeroPadding(oNowDate.getHours()) )
-						.arg( zeroPadding(oNowDate.getMinutes()) );
+						.arg( zeroPadding(oNowDate.getMinutes()) )
+						.arg( zeroPadding(oNowDate.getSeconds()) );
 }
 
 
@@ -210,7 +210,7 @@ function selectFolderExport(){
 //
 /*********************************************************************/
 function inputDateFileName(){
-	g_wEditFileName.text = getNowDateText();
+	g_wEditFileName.text = g_wEditFileName.text + getNowDateText();
 }
 
 
@@ -378,7 +378,9 @@ function stringPropertyValue( oProperty )
 function dForceMaterialsSimulationExport(){
 
 	g_InitializeData.outputPath = g_wEditFolder.text;
+	g_InitializeData.fileName = g_wEditFileName.text;
 	g_InitializeData.materials = g_wEditMaterial.text;
+	g_InitializeData.checkSimulationSettings = g_wCheckSimulationSettings.checked;
 	saveInitializeData(g_InitializeData);
 
 	var oExportFile = DzFile( g_wEditFolder.text + "/" + g_wEditFileName.text + ".csv");
