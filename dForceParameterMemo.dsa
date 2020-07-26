@@ -339,22 +339,26 @@ function stringPropertyValue( oProperty )
 	switch( sPropertyKind ){
 
 		case "DzFloatProperty":
-			return String( "%1,DzFloatProperty,%2,%3" ).arg( oProperty.getValue() )
+			return String( "%1,%2,DzFloatProperty,%3,%4" ).arg( oProperty.getValue() )
+												.arg( oProperty.getDefaultValue() != oProperty.getValue() ? "" : "Default" )
 												.arg( oProperty.isHidden() ? "Hidden" : "Visible" )
 												.arg( oProperty.getPath() );
 
 		case "DzIntProperty":
-			return String( "%1,DzIntProperty,%2,%3" ).arg( oProperty.getValue() )
+			return String( "%1,%2,DzIntProperty,%3,%4" ).arg( oProperty.getValue() )
+												.arg( oProperty.getDefaultValue() != oProperty.getValue() ? "" : "Default" )
 												.arg( oProperty.isHidden() ? "Hidden" : "Visible" )
 												.arg( oProperty.getPath() );
 
 		case "DzBoolProperty":
-			return String( "%1,DzBoolProperty,%2,%3" ).arg( oProperty.getBoolValue() ? "On" : "Off" )
+			return String( "%1,%2,DzBoolProperty,%3,%4" ).arg( oProperty.getBoolValue() ? "On" : "Off" )
+												.arg( oProperty.getDefaultBoolValue() != oProperty.getBoolValue() ? "" : "Default" )
 												.arg( oProperty.isHidden() ? "Hidden" : "Visible" )
 												.arg( oProperty.getPath() );
 
 		case "DzEnumProperty":
-			return String( "%1,DzEnumProperty,%2,%3" ).arg( oProperty.getStringValue() )
+			return String( "%1,%2,DzEnumProperty,%3,%4" ).arg( oProperty.getStringValue() )
+												.arg( oProperty.getDefaultStringValue() != oProperty.getStringValue() ? "" : "Default" )
 												.arg( oProperty.isHidden() ? "Hidden" : "Visible" )
 												.arg( oProperty.getPath() );
 
@@ -366,7 +370,7 @@ function stringPropertyValue( oProperty )
 													.arg( oProperty.getPath() );
 
 		default:
-			return String( "Error,%1,%2" ).arg( sPropertyKind ).arg( oProperty.getPath() );
+			return String( "Error,%1,%2,%3" ).arg( sPropertyKind ).arg( oProperty.isHidden() ? "Hidden" : "Visible" ).arg( oProperty.getPath() );
 			
 	}
 }
